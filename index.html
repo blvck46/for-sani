@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Sani - Always Yours ❤️</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Georgia', serif; cursor: crosshair; }
+        canvas { display: block; position: fixed; top: 0; left: 0; z-index: 1; }
+        
+        #inner-ui {
+            position: absolute; top: 42%; left: 50%;
+            transform: translate(-50%, -50%); text-align: center;
+            color: white; pointer-events: none; width: 100%; z-index: 10; transition: opacity 1s;
+        }
+
+        h1 {
+            font-size: 2.5rem; margin: 0; color: #fff0f3;
+            text-shadow: 0 0 20px #ff4d6d; opacity: 0;
+            transition: all 2s ease-in-out; animation: pulse 2s infinite alternate;
+        }
+
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+        #counter {
+            font-size: 0.9rem; margin-top: 10px; color: #ffb3c1;
+            opacity: 0; transition: opacity 2s ease-in; letter-spacing: 2px;
+        }
+
+        #action-btn {
+            position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+            padding: 15px 30px; background: rgba(255, 77, 109, 0.3);
+            border: 1px solid #ff4d6d; color: #ffb3c1; border-radius: 50px;
+            cursor: pointer; font-family: 'Georgia', serif; font-size: 1.1rem;
+            z-index: 20; transition: opacity 1s; display: none;
+        }
+
+        #page-2 {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(26, 0, 5, 0.8) 0%, rgba(0, 0, 0, 0.9) 100%);
+            z-index: 100; display: none; opacity: 0;
+            transition: opacity 1.5s ease; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        #letter-content {
+            width: 85%; max-width: 650px; text-align: center;
+            color: #ffdce3; font-size: 1.5rem; line-height: 1.8;
+            font-style: italic; z-index: 110;
+            text-shadow: 0 0 10px rgba(255, 77, 109, 0.8);
+        }
+
+        #clocks {
+            position: absolute; bottom: 60px; display: flex; gap: 60px;
+            color: #ffb3c1; font-size: 0.75rem; letter-spacing: 2px;
+            opacity: 0; transition: opacity 2s ease; z-index: 120;
+        }
+
+        .clock-box { text-align: center; }
+        .clock-label { opacity: 0.7; font-weight: bold; margin-bottom: 5px; display: block; }
+        .clock-time { font-size: 1.4rem; display: block; color: white; text-shadow: 0 0 10px #ff4d6d; }
+
+        .word-span { display: inline-block; white-space: nowrap; }
+        .letter { opacity: 0; display: inline-block; animation: reveal 0.4s forwards; }
+        @keyframes reveal { to { opacity: 1; } }
+
+        .slide-up-exit { transition: transform 1s, opacity 0.8s; transform: translateY(-60px); opacity: 0; }
+        .show { opacity: 1 !important; }
+        
+        #yt-player { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="yt-player"></div>
+
+    <div id="inner-ui">
+        <h1 id="greeting">Happy Birthday Sani ❤️</h1>
+        <div id="counter">Counting our beautiful moments...</div>
+    </div>
+
+    <button id="action-btn" onclick="openLetter()">Click to read my heart ᯓ❤︎</button>
+
+    <div id="page-2">
+        <div id="letter-content"></div>
+        <div id="clocks">
+            <div class="clock-box">
+                <span class="clock-label">TORONTO</span>
+                <span id="my-time" class="clock-time">00:00:00</span>
+            </div>
+            <div class="clock-box">
+                <span class="clock-label">JAPAN</span>
+                <span id="sani-time" class="clock-time">00:00:00</span>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // --- YOUTUBE API SETUP ---
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('yt-player', {
+                height: '0', width: '0',
+                videoId: 'bJS_KDVVeH0', 
+                playerVars: { 
+                    'autoplay': 0, 
+                    'loop': 1, 
+                    'playlist': 'bJS_KDVVeH0',
+                    'controls': 0,
+                    'showinfo': 0
+                }
+            });
+        }
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const actionBtn = document.getElementById('action-btn');
+        const letterPage = document.getElementById('page-2');
+        const letterBox = document.getElementById('letter-content');
+        const ui1 = document.getElementById('inner-ui');
+        const clockUI = document.getElementById('clocks');
+
+        let particles = [], rainParticles = [], sparkles = [], pIndex = 0;
+        let isPage2 = false;
+        const birthDate = new Date('2002-01-21T00:00:00');
+        const floralColors = ['#ff0033', '#ff4d6d', '#c9184a', '#ffb3c1'];
+
+        const paragraphs = [
+            "My love ❤️",
+            "I just want you to know that I will always stay by your side. No matter how bad life gets, I will never leave you.",
+            "When you feel sad or low, I will be there with you, quietly supporting you, because your happiness means everything to me.",
+            "Even if the whole world goes against you, I will stand with you. I will fight for you and protect you. I am completely yours.",
+            "It has been five months since we have been together, and I still don’t understand how time passed so fast.",
+            "We met five years ago, and from that day, I waited for you. Finally, five months ago, I got you.",
+            "I know I’m not perfect. Sometimes I hurt you and make you cry, and I am truly sorry for that. I am trying every day to be better for you.",
+            "Being in different countries is hard for me. I miss you so much, and I just want to meet you soon and be with you.",
+            "I want to marry you. I want to spend my life with you forever.",
+            "Happy Birthday, my love 🎂❤️. You mean everything to me."
+        ];
+
+        function updateClocks() {
+            const now = new Date();
+            const torontoTime = now.toLocaleTimeString('en-US', { timeZone: 'America/Toronto', hour12: true, hour: '2-digit', minute: '2-digit' });
+            const japanTime = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Tokyo', hour12: true, hour: '2-digit', minute: '2-digit' });
+            document.getElementById('my-time').textContent = torontoTime;
+            document.getElementById('sani-time').textContent = japanTime;
+        }
+
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', (e) => createSparkle(e.x, e.y));
+        resize();
+
+        function openLetter() {
+            if (player && player.playVideo) {
+                player.playVideo();
+            }
+
+            isPage2 = true;
+            ui1.style.opacity = "0";
+            actionBtn.style.opacity = "0";
+            letterPage.style.display = "flex";
+            updateClocks();
+            setInterval(updateClocks, 1000);
+            
+            setTimeout(() => {
+                letterPage.style.opacity = "1";
+                clockUI.style.opacity = "1";
+                startNextPara();
+            }, 500);
+        }
+
+        function startNextPara() {
+            if (pIndex < paragraphs.length) {
+                createFirework(canvas.width/2, canvas.height/2);
+                typeParagraph(paragraphs[pIndex]);
+            }
+        }
+
+        function typeParagraph(text) {
+            letterBox.innerHTML = "";
+            const words = text.split(" ");
+            let totalDelay = 0;
+
+            words.forEach((word) => {
+                const wordSpan = document.createElement("span");
+                wordSpan.className = "word-span";
+                word.split("").forEach((char) => {
+                    const charSpan = document.createElement("span");
+                    charSpan.textContent = char;
+                    charSpan.className = "letter";
+                    charSpan.style.animationDelay = `${totalDelay}s`;
+                    wordSpan.appendChild(charSpan);
+                    totalDelay += 0.05;
+                });
+                letterBox.appendChild(wordSpan);
+                letterBox.appendChild(document.createTextNode(" "));
+                totalDelay += 0.02;
+            });
+
+            setTimeout(() => {
+                if (pIndex < paragraphs.length - 1) {
+                    letterBox.classList.add('slide-up-exit');
+                    setTimeout(() => {
+                        letterBox.classList.remove('slide-up-exit');
+                        pIndex++;
+                        startNextPara();
+                    }, 1000);
+                }
+            }, (totalDelay * 1000) + 3000);
+        }
+
+        function drawHeart(x, y, size, color, opacity) {
+            ctx.save(); ctx.translate(x, y); ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-size / 2, -size / 2, -size, size / 3, 0, size);
+            ctx.bezierCurveTo(size, size / 3, size / 2, -size / 2, 0, 0);
+            ctx.fillStyle = color; ctx.globalAlpha = opacity;
+            ctx.fill(); ctx.restore();
+        }
+
+        class HeartParticle {
+            constructor(x, y, targetX, targetY, color, isRain = false) {
+                this.x = x; this.y = y; this.targetX = targetX; this.targetY = targetY;
+                this.color = color; this.isRain = isRain;
+                this.size = isRain ? Math.random() * 5 + 4 : Math.random() * 3 + 4;
+                this.speed = isRain ? Math.random() * 1.5 + 0.8 : 0.05;
+            }
+            update() {
+                if (this.isRain) { 
+                    this.y += this.speed; 
+                    this.x += Math.sin(this.y / 50);
+                    if (this.y > canvas.height) this.y = -20; 
+                }
+                else { this.x += (this.targetX - this.x) * this.speed; this.y += (this.targetY - this.y) * this.speed; }
+            }
+            draw() { drawHeart(this.x, this.y, this.size, this.color, 0.8); }
+        }
+
+        function createSparkle(x, y) {
+            for(let i=0; i<3; i++) {
+                sparkles.push({ 
+                    x, y, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, 
+                    life: 1.0, size: Math.random()*5 + 2, color: floralColors[Math.floor(Math.random()*4)]
+                });
+            }
+        }
+
+        function createFirework(x, y) {
+            for(let i=0; i<30; i++) createSparkle(x, y);
+        }
+
+        function init() {
+            const cx = canvas.width / 2, cy = canvas.height * 0.42;
+            for (let i = 0; i < 800; i++) {
+                let t = (i / 800) * (Math.PI * 2);
+                let x = 16 * Math.pow(Math.sin(t), 3);
+                let y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+                let finalX = x * 20 + cx + (Math.random()-0.5)*40;
+                let finalY = y * 20 + cy + (Math.random()-0.5)*40;
+                setTimeout(() => { particles.push(new HeartParticle(cx, cy, finalX, finalY, floralColors[i % 4])); }, i * 2);
+            }
+            for (let i = 0; i < 100; i++) {
+                rainParticles.push(new HeartParticle(Math.random()*canvas.width, Math.random()*canvas.height, 0, 0, floralColors[i%4], true));
+            }
+            setTimeout(() => {
+                document.getElementById('greeting').classList.add('show');
+                document.getElementById('counter').classList.add('show');
+                actionBtn.style.display = "block";
+                setInterval(() => {
+                    const diff = new Date() - birthDate;
+                    document.getElementById('counter').innerHTML = `${Math.floor(diff/86400000).toLocaleString()} Days | ${Math.floor((diff/3600000)%24)}h | ${Math.floor((diff/60000)%60)}m | ${Math.floor((diff/1000)%60)}s`;
+                }, 1000);
+            }, 1200);
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            rainParticles.forEach(rp => { rp.update(); rp.draw(); });
+            sparkles.forEach((s, i) => {
+                s.x += s.vx; s.y += s.vy; s.life -= 0.02;
+                drawHeart(s.x, s.y, s.size, s.color, s.life);
+                if(s.life <= 0) sparkles.splice(i, 1);
+            });
+            requestAnimationFrame(animate);
+        }
+        animate(); init();
+    </script>
+</body>
+</html>
